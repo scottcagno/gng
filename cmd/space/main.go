@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/veandco/go-sdl2/sdl"
 	"strconv"
 )
@@ -63,8 +62,11 @@ func main() {
 		renderer.SetDrawColor(255, 255, 255, 255)
 		renderer.Clear()
 
-		plr.draw(renderer)
-		plr.update() // update player location
+		err = plr.draw(renderer)
+		handleErr("drawing player", err)
+
+		err = plr.update() // update player location
+		handleErr("updating player", err)
 
 		for _, enemy := range enemies {
 			enemy.draw(renderer)

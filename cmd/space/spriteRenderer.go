@@ -6,35 +6,38 @@ import (
 )
 
 type spriteRenderer struct {
-	container *element
-	tex       *sdl.Texture
+	container     *element
+	tex           *sdl.Texture
+	width, height float64
 }
 
 func newSpriteRenderer(contianer *element, renderer *sdl.Renderer, filename string) *spriteRenderer {
+	tex := textureFromBMP(renderer, filename)
+	_, _, width, height, err := tex.Query()
+	if err != nil {
+		panic(fmt.Errorf("query texture: %v\n", err))
+	}
 	return &spriteRenderer{
 		container: contianer,
-		tex:       textureFromBMP(renderer, filename),
+		tex:       tex,
+		width:     float64(width),
+		height:    float64(height),
 	}
 }
 
-func (s *spriteRenderer) onUpdate() error {
+func (sr *spriteRenderer) onUpdate() error {
 	return nil
 }
 
-func (s *spriteRenderer) onDraw(renderer *sdl.Renderer) error {
-	_, _, width, height, err := s.tex.Query()
-	if err != nil {
-		return fmt.Errorf("query texture: %v\n", err)
-	}
+func (sr *spriteRenderer) onDraw(renderer *sdl.Renderer) error {
 	// converting coordinates from top left corner, to center of sprite
-	x := s.container.position.x - float64(width)/2.0
-	y := s.container.position.y - float64(height)/2.0
-
-	renderer.CopyEx(s.tex,
-		&sdl.Rect{X: 0, Y: 0, W: width, H: height},
-		&sdl.Rect{X: int32(x), Y: int32(y), W: width, H: height},
-		s.container.rotation, // angle of rotation
-		&sdl.Point{X: width / 2, Y: height / 2},
+	x := sr.container.position.x - sr.width/2.0
+	y := sr.container.position.y - sr.height/2.0
+	renderer.CopyEx(sr.tex,
+		&sdl.Rect{X: 0, Y: 0, W: int32(sr.width), H: int32(sr.height)},
+		&sdl.Rect{X: int32(x), Y: int32(y), W: int32(sr.width), H: int32(sr.height)},
+		sr.container.rotation, // angle of rotation
+		&sdl.Point{X: int32(sr.width / 2), Y: int32(sr.height / 2)},
 		sdl.FLIP_NONE,
 	)
 	return nil

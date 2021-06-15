@@ -7,5 +7,5 @@ func handleErr(msg string, err error) {
 		log.Panicf("[ERROR] %s: %v\n", msg, err)
 		return
 	}
-	log.Printf("[INFO] %s\n", msg)
+	//log.Printf("[INFO] %s\n", msg)
 }

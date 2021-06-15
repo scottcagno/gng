@@ -41,3 +41,23 @@ func (e *element) getComponent(withType component) component {
 	}
 	panic(fmt.Sprintf("no components with type %v\n", typ))
 }
+
+func (e *element) draw(renderer *sdl.Renderer) error {
+	for _, comp := range e.components {
+		err := comp.onDraw(renderer)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (e *element) update() error {
+	for _, comp := range e.components {
+		err := comp.onUpdate()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
