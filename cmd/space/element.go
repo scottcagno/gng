@@ -1,0 +1,43 @@
+package main
+
+import (
+	"fmt"
+	"github.com/veandco/go-sdl2/sdl"
+	"reflect"
+)
+
+type vector struct {
+	x, y float64
+}
+
+type component interface {
+	onUpdate() error
+	onDraw(renderer *sdl.Renderer) error
+}
+
+type element struct {
+	position   vector
+	rotation   float64
+	active     bool
+	components []component
+}
+
+func (e *element) addComponent(comp component) {
+	typ := reflect.TypeOf(comp)
+	for _, existing := range e.components {
+		if reflect.TypeOf(existing) == typ {
+			panic(fmt.Sprintf("attempt to add new component with existing type %v\n", typ))
+		}
+	}
+	e.components = append(e.components, comp)
+}
+
+func (e *element) getComponent(withType component) component {
+	typ := reflect.TypeOf(withType)
+	for _, existing := range e.components {
+		if reflect.TypeOf(existing) == typ {
+			return existing
+		}
+	}
+	panic(fmt.Sprintf("no components with type %v\n", typ))
+}
