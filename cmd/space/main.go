@@ -2,17 +2,13 @@ package main
 
 import (
 	"github.com/veandco/go-sdl2/sdl"
-	"log"
+	"strconv"
 )
 
 const (
 	screenWidth  = 600
 	screenHeight = 800
 )
-
-func handleErr(msg string, err error) {
-	log.Panicf("%s: %v\n", msg, err)
-}
 
 func main() {
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
@@ -24,7 +20,7 @@ func main() {
 		sdl.WINDOWPOS_UNDEFINED,
 		screenWidth,
 		screenHeight,
-		sdl.WINDOW_OPENGL,
+		sdl.WINDOW_SHOWN,
 	)
 	handleErr("initializing window", err)
 	defer window.Destroy()
@@ -33,9 +29,41 @@ func main() {
 	handleErr("initializing renderer", err)
 	defer renderer.Destroy()
 
-	for {
+	plr, err := newPlayer(renderer)
+	handleErr("creating player texture", err)
+
+	var enemies []*basicEnemy
+	for i := 0; i < 5; i++ {
+		for j := 0; j < 3; j++ {
+			offset := +(basicEnemySize / 2.0) + 1.0
+			x := (float64(i)/5)*screenWidth + offset
+			y := float64(j)*basicEnemySize + offset
+			enemy, err := newBasicEnemy(renderer, x, y)
+			handleErr("creating basic enemy at "+strconv.Itoa(i)+", "+strconv.Itoa(j), err)
+			enemies = append(enemies, enemy)
+		}
+	}
+
+	running := true
+	for running {
+		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+			switch event.(type) {
+			case *sdl.QuitEvent:
+				println("Quit")
+				running = false
+				break
+			}
+		}
 		renderer.SetDrawColor(255, 255, 255, 255)
 		renderer.Clear()
+
+		plr.draw(renderer)
+		plr.update() // update player location
+
+		for _, enemy := range enemies {
+			enemy.draw(renderer)
+		}
+
 		renderer.Present()
 	}
 }
