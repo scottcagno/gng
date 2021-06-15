@@ -18,6 +18,16 @@ type player struct {
 	lastShot time.Time
 }
 
+func newPlayer(renderer *sdl.Renderer) *element {
+	p := &element{
+		position: vector{
+			x: screenWidth / 2.0,
+			y: screenHeight - playerSize/2.0,
+		},
+		active: true,
+	}
+}
+
 func newPlayer(renderer *sdl.Renderer) *player {
 	return &player{
 		tex: textureFromBMP(renderer, "cmd/space/sprites/triangle.bmp"),
