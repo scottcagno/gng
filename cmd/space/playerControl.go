@@ -26,15 +26,15 @@ func newKeyboardMover(container *element, speed float64) *keyboardMover {
 
 func (mover *keyboardMover) onUpdate() error {
 	keys := sdl.GetKeyboardState()
-	pos := mover.container.position
+	cont := mover.container
 	if keyIsPressed(keys[sdl.SCANCODE_LEFT]) {
-		if pos.x-(mover.sr.width/2.0) > 0 {
-			pos.x -= mover.speed
+		if cont.position.x-(mover.sr.width/2.0) > 0 {
+			cont.position.x -= mover.speed
 		}
 
 	} else if keyIsPressed(keys[sdl.SCANCODE_RIGHT]) {
-		if pos.x+(mover.sr.height/2.0) < screenWidth {
-			pos.x += mover.speed
+		if cont.position.x+(mover.sr.height/2.0) < screenWidth {
+			cont.position.x += mover.speed
 		}
 	}
 	return nil

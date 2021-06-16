@@ -12,21 +12,21 @@ const (
 )
 
 func newPlayer(renderer *sdl.Renderer) *element {
-	p := &element{
+	plyr := &element{
 		position: vector{
 			x: screenWidth / 2.0,
 			y: screenHeight - playerSize/2.0,
 		},
 		active: true,
 	}
-	sr := newSpriteRenderer(p, renderer, "cmd/space/sprites/triangle.bmp")
-	p.addComponent(sr)
+	sr := newSpriteRenderer(plyr, renderer, "cmd/space/sprites/triangle.bmp")
+	plyr.addComponent(sr)
 
-	mover := newKeyboardMover(p, playerSpeed)
-	p.addComponent(mover)
+	mover := newKeyboardMover(plyr, playerSpeed)
+	plyr.addComponent(mover)
 
-	shooter := newKeyboardShooter(p, playerShotCooldown)
-	p.addComponent(shooter)
+	shooter := newKeyboardShooter(plyr, playerShotCooldown)
+	plyr.addComponent(shooter)
 
-	return p
+	return plyr
 }

@@ -37,7 +37,7 @@ func (sr *spriteRenderer) onDraw(renderer *sdl.Renderer) error {
 		&sdl.Rect{X: 0, Y: 0, W: int32(sr.width), H: int32(sr.height)},
 		&sdl.Rect{X: int32(x), Y: int32(y), W: int32(sr.width), H: int32(sr.height)},
 		sr.container.rotation, // angle of rotation
-		&sdl.Point{X: int32(sr.width / 2), Y: int32(sr.height / 2)},
+		&sdl.Point{X: int32(sr.width) / 2, Y: int32(sr.height) / 2},
 		sdl.FLIP_NONE,
 	)
 	return nil

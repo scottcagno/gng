@@ -31,17 +31,17 @@ func main() {
 
 	// create new player instance
 	plr := newPlayer(renderer)
+	elements = append(elements, plr) // GLOBAL
 
-	// create matrix of enemies
-	var enemies []*basicEnemy
 	for i := 0; i < 5; i++ {
 		for j := 0; j < 3; j++ {
 			offset := +(basicEnemySize / 2.0) + 1.0
 			x := (float64(i)/5)*screenWidth + offset
 			y := float64(j)*basicEnemySize + offset
-			enemy := newBasicEnemy(renderer, x, y)
+			enemy := newBasicEnemy(renderer, vector{x: x, y: y})
 			handleErr("creating basic enemy at "+strconv.Itoa(i)+", "+strconv.Itoa(j), err)
-			enemies = append(enemies, enemy)
+
+			elements = append(elements, enemy) // GLOBAL
 		}
 	}
 
@@ -62,14 +62,13 @@ func main() {
 		renderer.SetDrawColor(255, 255, 255, 255)
 		renderer.Clear()
 
-		err = plr.draw(renderer)
-		handleErr("drawing player", err)
-
-		err = plr.update() // update player location
-		handleErr("updating player", err)
-
-		for _, enemy := range enemies {
-			enemy.draw(renderer)
+		for _, elem := range elements {
+			if elem.active {
+				err = elem.update()
+				handleErr("updating element", err)
+				err = elem.draw(renderer)
+				handleErr("drawing element", err)
+			}
 		}
 
 		for _, bul := range bulletPool {

@@ -4,6 +4,18 @@ import "github.com/veandco/go-sdl2/sdl"
 
 const basicEnemySize = 100
 
+func newBasicEnemy(renderer *sdl.Renderer, position vector) *element {
+	enemy := &element{
+		position: position,
+		rotation: 45,
+		active:   true,
+	}
+	sr := newSpriteRenderer(enemy, renderer, "cmd/space/sprites/square.bmp")
+	enemy.addComponent(sr)
+	return enemy
+}
+
+/*
 type enemy = basicEnemy
 
 type basicEnemy struct {
@@ -31,3 +43,4 @@ func (e *basicEnemy) draw(renderer *sdl.Renderer) {
 		sdl.FLIP_NONE,
 	)
 }
+*/
