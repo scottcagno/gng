@@ -19,12 +19,15 @@ func newBullet(renderer *sdl.Renderer) *element {
 	mover := newBulletMover(bullet, bulletSpeed)
 	bullet.addComponent(mover)
 
+	bullet.collisions = append(bullet.collisions, newCollisionCircle(bullet.position, bulletSize))
+	bullet.tag = "bullet"
+
 	return bullet
 }
 
 var bulletPool []*element
 
-func initBulletPoll(renderer *sdl.Renderer, max int) {
+func initBulletPool(renderer *sdl.Renderer, max int) {
 	for i := 0; i < max; i++ {
 		bul := newBullet(renderer)
 		elements = append(elements, bul) // GLOBAL

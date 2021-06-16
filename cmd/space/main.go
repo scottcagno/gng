@@ -29,9 +29,7 @@ func main() {
 	handleErr("initializing renderer", err)
 	defer renderer.Destroy()
 
-	// create new player instance
-	plr := newPlayer(renderer)
-	elements = append(elements, plr) // GLOBAL
+	elements = append(elements, newPlayer(renderer)) // GLOBAL
 
 	for i := 0; i < 5; i++ {
 		for j := 0; j < 3; j++ {
@@ -46,7 +44,7 @@ func main() {
 	}
 
 	// initialize bullet pool
-	initBulletPoll(renderer, 30)
+	initBulletPool(renderer, 30)
 
 	// start event loop
 	running := true
@@ -66,10 +64,14 @@ func main() {
 			if elem.active {
 				err = elem.update()
 				handleErr("updating element", err)
+
 				err = elem.draw(renderer)
 				handleErr("drawing element", err)
 			}
 		}
+
+		err := checkCollisions()
+		handleErr("checking collisions", err)
 
 		renderer.Present()
 	}

@@ -13,12 +13,15 @@ type vector struct {
 type component interface {
 	onUpdate() error
 	onDraw(renderer *sdl.Renderer) error
+	onCollision(other *element) error
 }
 
 type element struct {
 	position   vector
 	rotation   float64
 	active     bool
+	tag        string
+	collisions []circle
 	components []component
 }
 
@@ -55,6 +58,16 @@ func (e *element) draw(renderer *sdl.Renderer) error {
 func (e *element) update() error {
 	for _, comp := range e.components {
 		err := comp.onUpdate()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (e *element) collision(other *element) error {
+	for _, comp := range e.components {
+		err := comp.onCollision(other)
 		if err != nil {
 			return err
 		}

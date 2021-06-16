@@ -23,11 +23,21 @@ func (mover *bulletMover) onDraw(renderer *sdl.Renderer) error {
 
 func (mover *bulletMover) onUpdate() error {
 	cont := mover.container
+
 	cont.position.x += bulletSpeed * math.Cos(cont.rotation)
 	cont.position.y += bulletSpeed * math.Sin(cont.rotation)
+
 	if cont.position.x > screenWidth || cont.position.x < 0 ||
 		cont.position.y > screenHeight || cont.position.y < 0 {
 		cont.active = false
 	}
+
+	cont.collisions[0].center = cont.position
+
+	return nil
+}
+
+func (mover *bulletMover) onCollision(other *element) error {
+	mover.container.active = false
 	return nil
 }
