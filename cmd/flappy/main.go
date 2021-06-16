@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/veandco/go-sdl2/img"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/ttf"
 	"os"
@@ -45,33 +44,19 @@ func run() error {
 		return fmt.Errorf("could not draw title: %v", err)
 	}
 
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 1)
 
-	err = drawBackground(r)
+	s, err := newScene(r)
 	if err != nil {
-		return fmt.Errorf("could not draw background: %v", err)
+		return fmt.Errorf("could not create scene: %v", err)
+	}
+	defer s.destroy()
+	err = s.paint(r)
+	if err != nil {
+		return fmt.Errorf("could not paint scene: %v", err)
 	}
 
 	time.Sleep(time.Second * 5)
-
-	return nil
-}
-
-func drawBackground(r *sdl.Renderer) error {
-	r.Clear() // clear buffer
-
-	tex, err := img.LoadTexture(r, "cmd/flappy/res/imgs/background.png")
-	if err != nil {
-		return fmt.Errorf("could not load background image: %v", err)
-	}
-	defer tex.Destroy()
-
-	err = r.Copy(tex, nil, nil)
-	if err != nil {
-		return fmt.Errorf("could not copy background: %v", err)
-	}
-
-	r.Present() // paint
 
 	return nil
 }
