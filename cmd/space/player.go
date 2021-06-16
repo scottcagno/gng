@@ -19,7 +19,7 @@ func newPlayer(renderer *sdl.Renderer) *element {
 		},
 		active: true,
 	}
-	sr := newSpriteRenderer(plyr, renderer, "cmd/space/sprites/triangle.bmp")
+	sr := newSpriteRenderer(plyr, renderer, "cmd/space/sprites/player.bmp")
 	plyr.addComponent(sr)
 
 	mover := newKeyboardMover(plyr, playerSpeed)
