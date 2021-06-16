@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/ttf"
@@ -51,14 +52,16 @@ func run() error {
 		return fmt.Errorf("could not create scene: %v", err)
 	}
 	defer s.destroy()
-	err = s.paint(r)
-	if err != nil {
-		return fmt.Errorf("could not paint scene: %v", err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	select {
+	case <-s.run(ctx, r):
+		return err
+	case <-time.After(5 * time.Second):
+		return nil
 	}
-
-	time.Sleep(time.Second * 5)
-
-	return nil
 }
 
 func drawTitle(r *sdl.Renderer) error {
