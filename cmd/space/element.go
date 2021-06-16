@@ -6,10 +6,6 @@ import (
 	"reflect"
 )
 
-type vector struct {
-	x, y float64
-}
-
 type component interface {
 	onUpdate() error
 	onDraw(renderer *sdl.Renderer) error

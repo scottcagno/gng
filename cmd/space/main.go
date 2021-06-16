@@ -3,12 +3,20 @@ package main
 import (
 	"github.com/veandco/go-sdl2/sdl"
 	"strconv"
+	"time"
 )
 
 const (
-	screenWidth  = 600
-	screenHeight = 800
+	screenWidth          = 600
+	screenHeight         = 800
+	targetTicksPerSecond = 60
 )
+
+type vector struct {
+	x, y float64
+}
+
+var delta float64
 
 func main() {
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
@@ -49,6 +57,8 @@ func main() {
 	// start event loop
 	running := true
 	for running {
+		frameStart := time.Now()
+
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch event.(type) {
 			case *sdl.QuitEvent:
@@ -70,9 +80,12 @@ func main() {
 			}
 		}
 
-		err := checkCollisions()
+		err = checkCollisions()
 		handleErr("checking collisions", err)
 
 		renderer.Present()
+
+		delta = time.Since(frameStart).Seconds() * targetTicksPerSecond
+
 	}
 }

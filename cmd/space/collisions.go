@@ -10,7 +10,7 @@ type circle struct {
 func newCollisionCircle(position vector, size float64) circle {
 	return circle{
 		center: position,
-		radius: size / 4,
+		radius: size / 3,
 	}
 }
 
