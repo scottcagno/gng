@@ -40,11 +40,10 @@ func run() error {
 	}
 	defer w.Destroy()
 
-	err = drawTitle(r)
+	err = drawTitle(r, "Flappy Gopher")
 	if err != nil {
 		return fmt.Errorf("could not draw title: %v", err)
 	}
-
 	time.Sleep(1 * time.Second)
 
 	s, err := newScene(r)
@@ -66,7 +65,7 @@ func run() error {
 	}
 }
 
-func drawTitle(r *sdl.Renderer) error {
+func drawTitle(r *sdl.Renderer, text string) error {
 	r.Clear() // clear buffer
 
 	font, err := ttf.OpenFont("cmd/flappy/res/fonts/flappy.ttf", 10)
@@ -76,7 +75,7 @@ func drawTitle(r *sdl.Renderer) error {
 	defer font.Close()
 
 	c := sdl.Color{R: 255, G: 100, B: 0, A: 255}
-	sur, err := font.RenderUTF8Solid("Flappy Gopher", c)
+	sur, err := font.RenderUTF8Solid(text, c)
 	if err != nil {
 		return fmt.Errorf("could not render title: %v", err)
 	}
@@ -88,7 +87,19 @@ func drawTitle(r *sdl.Renderer) error {
 	}
 	defer tex.Destroy()
 
-	err = r.Copy(tex, nil, nil)
+	_, _, w, h, err := tex.Query()
+	if err != nil {
+		return fmt.Errorf("could not query texture: %v", err)
+	}
+
+	w, h = w*4, h*4
+
+	err = r.Copy(tex, nil, &sdl.Rect{
+		X: screenWidth/2 - w/2,
+		Y: screenHeight/2 - h/2,
+		W: w,
+		H: h,
+	})
 	if err != nil {
 		return fmt.Errorf("could not copy texture: %v", err)
 	}
