@@ -22,7 +22,7 @@ var textureAtlas *sdl.Texture
 var textureIndex map[game.Tile]*sdl.Rect
 
 func loadTextureIndex() {
-	fd, err := os.Open("assets/atlas-index.txt")
+	fd, err := os.Open("cmd/rpg/ui2d/assets/atlas-index.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -31,14 +31,13 @@ func loadTextureIndex() {
 	scanner := bufio.NewScanner(fd)
 	for scanner.Scan() {
 		line := scanner.Text()
-		line = strings.TrimSpace(line)
-		tileRune := game.Tile(line[0])
-		tilePos := strings.Split(line[1:], ",")
-		x, err := strconv.Atoi(tilePos[0])
+		lines := strings.Split(strings.TrimSpace(line), ",")
+		tileRune := game.Tile(lines[0][0])
+		x, err := strconv.Atoi(lines[1])
 		if err != nil {
 			log.Panicf("atoi: %v", err)
 		}
-		y, err := strconv.Atoi(tilePos[1])
+		y, err := strconv.Atoi(lines[2])
 		if err != nil {
 			log.Panicf("atoi: %v", err)
 		}
