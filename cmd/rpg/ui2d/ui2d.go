@@ -2,11 +2,11 @@ package ui2d
 
 import (
 	"bufio"
-	"fmt"
 	"github.com/scottcagno/gng/cmd/rpg/game"
 	"github.com/veandco/go-sdl2/sdl"
 	"image/png"
 	"log"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
@@ -19,7 +19,7 @@ const (
 
 var renderer *sdl.Renderer
 var textureAtlas *sdl.Texture
-var textureIndex map[game.Tile]*sdl.Rect
+var textureIndex map[game.Tile][]*sdl.Rect
 
 func loadTextureIndex() {
 	fd, err := os.Open("cmd/rpg/ui2d/assets/atlas-index.txt")
@@ -27,6 +27,8 @@ func loadTextureIndex() {
 		panic(err)
 	}
 	defer fd.Close()
+
+	textureIndex = make(map[game.Tile][]*sdl.Rect)
 
 	scanner := bufio.NewScanner(fd)
 	for scanner.Scan() {
@@ -41,7 +43,20 @@ func loadTextureIndex() {
 		if err != nil {
 			log.Panicf("atoi: %v", err)
 		}
-		fmt.Println(tileRune, x, y)
+		c, err := strconv.Atoi(lines[3])
+		if err != nil {
+			log.Panicf("atoi: %v", err)
+		}
+		var rects []*sdl.Rect
+		for i := 0; i < c; i++ {
+			rects = append(rects, &sdl.Rect{int32(x * 32), int32(y * 32), 32, 32})
+			x++
+			if x > 62 {
+				x = 0
+				y++
+			}
+		}
+		textureIndex[tileRune] = rects
 	}
 }
 
@@ -137,9 +152,19 @@ type UI2d struct {
 }
 
 func (ui *UI2d) Draw(level *game.Level) {
-	fmt.Println("we did something")
-	renderer.Copy(textureAtlas, nil, nil)
-	renderer.Present()
 	loadTextureIndex()
+	rand.Seed(1)
+	for y, row := range level.Map {
+		for x, tile := range row {
+			if tile == game.Blank {
+				continue
+			}
+			srcRects := textureIndex[tile]
+			srcRect := srcRects[rand.Intn(len(srcRects))]
+			dstRect := &sdl.Rect{int32(x * 32), int32(y * 32), 32, 32}
+			renderer.Copy(textureAtlas, srcRect, dstRect)
+		}
+	}
+	renderer.Present()
 	sdl.Delay(5000)
 }
