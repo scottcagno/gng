@@ -6,7 +6,11 @@ import (
 )
 
 type GameUI interface {
-	Draw(*Level)
+	DrawThenGetInput(*Level) Input
+}
+
+type Input struct {
+	up, down, left, right bool
 }
 
 type Tile rune
@@ -16,10 +20,20 @@ const (
 	DirtFloor Tile = '.'
 	Door      Tile = '|'
 	Blank     Tile = 0
+	Pending   Tile = -1
 )
 
+type Entity struct {
+	X, Y int
+}
+
+type Player struct {
+	Entity
+}
+
 type Level struct {
-	Map [][]Tile
+	Map    [][]Tile
+	Player Player
 }
 
 func loadLevelFromFile(filename string) *Level {
@@ -60,8 +74,32 @@ func loadLevelFromFile(filename string) *Level {
 				t = Door
 			case '.':
 				t = DirtFloor
+			case 'P':
+				level.Player.X = x
+				level.Player.Y = y
+				t = Pending
+			default:
+				panic("Invalid character in map")
 			}
 			level.Map[y][x] = t
+		}
+	}
+
+	for y, row := range level.Map {
+		for x, tile := range row {
+			if tile == Pending {
+			SearchLoop:
+				for searchX := x - 1; searchX <= x+1; searchX++ {
+					for searchY := y - 1; searchY <= y+1; searchY++ {
+						searchTile := level.Map[searchY][searchX]
+						switch searchTile {
+						case DirtFloor:
+							level.Map[y][x] = DirtFloor
+							break SearchLoop
+						}
+					}
+				}
+			}
 		}
 	}
 	return level
@@ -69,5 +107,13 @@ func loadLevelFromFile(filename string) *Level {
 
 func Run(ui GameUI) {
 	level := loadLevelFromFile("cmd/rpg/game/maps/level1.map")
-	ui.Draw(level)
+
+	// game loop
+	var input Input
+	for {
+		input = ui.DrawThenGetInput(level)
+		// do something with input
+		_ = input
+	}
+
 }

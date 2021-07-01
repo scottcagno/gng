@@ -145,15 +145,18 @@ func init() {
 	sdl.SetHint(sdl.HINT_RENDER_SCALE_QUALITY, "1")
 
 	textureAtlas = imgFileToTexture("cmd/rpg/ui2d/assets/tiles.png")
+
+	loadTextureIndex()
 }
 
 type UI2d struct {
 	// TODO: stuff...
 }
 
-func (ui *UI2d) Draw(level *game.Level) {
-	loadTextureIndex()
+func (ui *UI2d) DrawThenGetInput(level *game.Level) game.Input {
 	rand.Seed(1)
+
+	// draw tiles
 	for y, row := range level.Map {
 		for x, tile := range row {
 			if tile == game.Blank {
@@ -165,6 +168,18 @@ func (ui *UI2d) Draw(level *game.Level) {
 			renderer.Copy(textureAtlas, srcRect, dstRect)
 		}
 	}
+
+	// draw player
+	// 21,59
+	renderer.Copy(textureAtlas,
+		&sdl.Rect{int32(21 * 32), int32(59 * 32), 32, 32},
+		&sdl.Rect{int32(level.Player.X) * 32, int32(level.Player.Y) * 32, 32, 32},
+	)
+
+	// present
 	renderer.Present()
-	sdl.Delay(5000)
+
+	// loop forever
+	for {
+	}
 }
