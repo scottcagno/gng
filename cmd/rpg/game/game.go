@@ -149,7 +149,6 @@ func handleInput(level *Level, input *Input) {
 		if canWalk(level, p.X, p.Y+1) {
 			level.Player.Y++
 		}
-
 	case Left:
 		if canWalk(level, p.X-1, p.Y) {
 			level.Player.X--
