@@ -20,6 +20,8 @@ const (
 var renderer *sdl.Renderer
 var textureAtlas *sdl.Texture
 var textureIndex map[game.Tile][]*sdl.Rect
+var prevKeyboardState []uint8
+var keyboardState []uint8
 
 func loadTextureIndex() {
 	fd, err := os.Open("cmd/rpg/ui2d/assets/atlas-index.txt")
@@ -147,14 +149,22 @@ func init() {
 	textureAtlas = imgFileToTexture("cmd/rpg/ui2d/assets/tiles.png")
 
 	loadTextureIndex()
+
+	keyboardState = sdl.GetKeyboardState()
+	prevKeyboardState = make([]uint8, len(keyboardState))
+	for i, v := range keyboardState {
+		prevKeyboardState[i] = v
+	}
 }
 
 type UI2d struct {
 	// TODO: stuff...
 }
 
-func (ui *UI2d) DrawThenGetInput(level *game.Level) game.Input {
+func (ui *UI2d) Draw(level *game.Level) {
 	rand.Seed(1)
+
+	renderer.Clear()
 
 	// draw tiles
 	for y, row := range level.Map {
@@ -170,7 +180,6 @@ func (ui *UI2d) DrawThenGetInput(level *game.Level) game.Input {
 	}
 
 	// draw player
-	// 21,59
 	renderer.Copy(textureAtlas,
 		&sdl.Rect{int32(21 * 32), int32(59 * 32), 32, 32},
 		&sdl.Rect{int32(level.Player.X) * 32, int32(level.Player.Y) * 32, 32, 32},
@@ -178,8 +187,42 @@ func (ui *UI2d) DrawThenGetInput(level *game.Level) game.Input {
 
 	// present
 	renderer.Present()
+}
 
-	// loop forever
+func keyPress(scancode uint8) bool {
+	return keyboardState[scancode] == 0 && prevKeyboardState[scancode] != 0
+}
+
+func (ui *UI2d) GetInput() *game.Input {
+
 	for {
+		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+			switch event.(type) {
+			case *sdl.QuitEvent:
+				return &game.Input{game.Quit}
+			}
+		}
+
+		var input game.Input
+		if keyPress(sdl.SCANCODE_UP) {
+			input.Typ = game.Up
+		}
+		if keyPress(sdl.SCANCODE_DOWN) {
+			input.Typ = game.Down
+		}
+		if keyPress(sdl.SCANCODE_LEFT) {
+			input.Typ = game.Left
+		}
+		if keyPress(sdl.SCANCODE_RIGHT) {
+			input.Typ = game.Right
+		}
+
+		for i, v := range keyboardState {
+			prevKeyboardState[i] = v
+		}
+
+		if input.Typ != game.None {
+			return &input
+		}
 	}
 }
