@@ -3,6 +3,7 @@ package game
 import (
 	"bufio"
 	"os"
+	"time"
 )
 
 type GameUI interface {
@@ -19,6 +20,7 @@ const (
 	Left
 	Right
 	Quit
+	Search
 )
 
 type Input struct {
@@ -36,8 +38,12 @@ const (
 	Pending    Tile = -1
 )
 
-type Entity struct {
+type Pos struct {
 	X, Y int
+}
+
+type Entity struct {
+	Pos
 }
 
 type Player struct {
@@ -47,6 +53,7 @@ type Player struct {
 type Level struct {
 	Map    [][]Tile
 	Player Player
+	Debug  map[Pos]bool
 }
 
 func loadLevelFromFile(filename string) *Level {
@@ -120,44 +127,91 @@ func loadLevelFromFile(filename string) *Level {
 	return level
 }
 
-func canWalk(level *Level, x, y int) bool {
-	t := level.Map[y][x]
+func canWalk(level *Level, pos Pos) bool {
+	t := level.Map[pos.Y][pos.X]
 	switch t {
 	case StoneWall, ClosedDoor, Blank:
-		checkDoor(level, x, y)
+		checkDoor(level, pos)
 		return false
 	default:
 		return true
 	}
 }
 
-func checkDoor(level *Level, x, y int) {
-	t := level.Map[y][x]
+func checkDoor(level *Level, pos Pos) {
+	t := level.Map[pos.Y][pos.X]
 	if t == ClosedDoor {
-		level.Map[y][x] = OpenDoor
+		level.Map[pos.Y][pos.X] = OpenDoor
 	}
 }
 
-func handleInput(level *Level, input *Input) {
+func handleInput(ui GameUI, level *Level, input *Input) {
 	p := level.Player
 	switch input.Typ {
 	case Up:
-		if canWalk(level, p.X, p.Y-1) {
+		if canWalk(level, Pos{p.X, p.Y - 1}) {
 			level.Player.Y--
 		}
 	case Down:
-		if canWalk(level, p.X, p.Y+1) {
+		if canWalk(level, Pos{p.X, p.Y + 1}) {
 			level.Player.Y++
 		}
 	case Left:
-		if canWalk(level, p.X-1, p.Y) {
+		if canWalk(level, Pos{p.X - 1, p.Y}) {
 			level.Player.X--
 		}
 	case Right:
-		if canWalk(level, p.X+1, p.Y) {
+		if canWalk(level, Pos{p.X + 1, p.Y}) {
 			level.Player.X++
 		}
+	case Search:
+		bfs(ui, level, level.Player.Pos)
+	case Quit:
+		return
 	}
+}
+
+func getNeighbors(level *Level, current Pos) []Pos {
+	left := Pos{current.X - 1, current.Y}
+	right := Pos{current.X + 1, current.Y}
+	up := Pos{current.X, current.Y - 1}
+	down := Pos{current.X, current.Y + 1}
+
+	neighbors := make([]Pos, 0, 4)
+	if canWalk(level, right) {
+		neighbors = append(neighbors, right)
+	}
+	if canWalk(level, left) {
+		neighbors = append(neighbors, left)
+	}
+	if canWalk(level, up) {
+		neighbors = append(neighbors, up)
+	}
+	if canWalk(level, down) {
+		neighbors = append(neighbors, down)
+	}
+	return neighbors
+}
+
+func bfs(ui GameUI, level *Level, start Pos) {
+	frontier := make([]Pos, 0, 8)
+	frontier = append(frontier, start)
+	visited := make(map[Pos]bool, 0)
+	visited[start] = true
+	level.Debug = visited
+	for len(frontier) > 0 {
+		current := frontier[0]
+		frontier = frontier[1:]
+		for _, next := range getNeighbors(level, current) {
+			if !visited[next] {
+				frontier = append(frontier, next)
+				visited[next] = true
+				ui.Draw(level)
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
+	}
+
 }
 
 func Run(ui GameUI) {
@@ -173,6 +227,6 @@ func Run(ui GameUI) {
 			return
 		}
 
-		handleInput(level, input)
+		handleInput(ui, level, input)
 	}
 }

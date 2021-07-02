@@ -199,6 +199,14 @@ func (ui *UI2d) Draw(level *game.Level) {
 			srcRects := textureIndex[tile]
 			srcRect := srcRects[rand.Intn(len(srcRects))]
 			dstRect := &sdl.Rect{int32(x*32) + offsetX, int32(y*32) + offsetY, 32, 32}
+
+			pos := game.Pos{x, y}
+			if _, ok := level.Debug[pos]; ok {
+				textureAtlas.SetColorMod(128, 0, 0)
+			} else {
+				textureAtlas.SetColorMod(255, 255, 255)
+			}
+
 			renderer.Copy(textureAtlas, srcRect, dstRect)
 		}
 	}
@@ -239,6 +247,12 @@ func (ui *UI2d) GetInput() *game.Input {
 		}
 		if keyPress(sdl.SCANCODE_RIGHT) {
 			input.Typ = game.Right
+		}
+		if keyPress(sdl.SCANCODE_S) {
+			input.Typ = game.Search
+		}
+		if keyPress(sdl.SCANCODE_Q) {
+			input.Typ = game.Quit
 		}
 
 		for i, v := range keyboardState {
