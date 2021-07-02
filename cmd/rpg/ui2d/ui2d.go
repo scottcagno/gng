@@ -12,28 +12,82 @@ import (
 	"strings"
 )
 
-const (
-	winWidth  = 1280
-	winHeight = 720
-)
+type ui struct {
+	winWidth          int //= 1280
+	winHeight         int //= 720
+	renderer          *sdl.Renderer
+	window            *sdl.Window
+	textureAtlas      *sdl.Texture
+	textureIndex      map[game.Tile][]*sdl.Rect
+	prevKeyboardState []uint8
+	keyboardState     []uint8
+	centerX           int
+	centerY           int
+	r                 *rand.Rand
+	levelChan         chan *game.Level
+	inputChan         chan *game.Input
+}
 
-var renderer *sdl.Renderer
-var textureAtlas *sdl.Texture
-var textureIndex map[game.Tile][]*sdl.Rect
-var prevKeyboardState []uint8
-var keyboardState []uint8
+func NewUI(inputChan chan *game.Input, levelChan chan *game.Level) *ui {
 
-var centerX int
-var centerY int
+	winWidth, winHeight := int32(1280), int32(720)
 
-func loadTextureIndex() {
+	// create window
+	window, err := sdl.CreateWindow(
+		"RPG",
+		200,
+		200,
+		winWidth,
+		winHeight,
+		sdl.WINDOW_SHOWN,
+	)
+	if err != nil {
+		log.Panicf("window: %v", err)
+	}
+
+	// create renderer
+	renderer, err := sdl.CreateRenderer(window,
+		-1,
+		sdl.RENDERER_ACCELERATED, // USE GPU!
+	)
+	if err != nil {
+		log.Panicf("renderer: %v", err)
+	}
+	sdl.SetHint(sdl.HINT_RENDER_SCALE_QUALITY, "1")
+
+	keyboardState := sdl.GetKeyboardState()
+	prevKeyboardState := make([]uint8, len(keyboardState))
+	for i, v := range keyboardState {
+		prevKeyboardState[i] = v
+	}
+
+	ui := &ui{
+		winWidth:          int(winWidth),
+		winHeight:         int(winHeight),
+		renderer:          renderer,
+		window:            window,
+		prevKeyboardState: prevKeyboardState,
+		keyboardState:     keyboardState,
+		centerX:           -1,
+		centerY:           -1,
+		r:                 rand.New(rand.NewSource(1)),
+		levelChan:         levelChan,
+		inputChan:         inputChan,
+	}
+	ui.textureAtlas = ui.imgFileToTexture("cmd/rpg/ui2d/assets/tiles.png")
+	ui.loadTextureIndex()
+
+	return ui
+}
+
+func (ui *ui) loadTextureIndex() {
 	fd, err := os.Open("cmd/rpg/ui2d/assets/atlas-index.txt")
 	if err != nil {
 		panic(err)
 	}
 	defer fd.Close()
 
-	textureIndex = make(map[game.Tile][]*sdl.Rect)
+	ui.textureIndex = make(map[game.Tile][]*sdl.Rect)
 
 	scanner := bufio.NewScanner(fd)
 	for scanner.Scan() {
@@ -61,11 +115,11 @@ func loadTextureIndex() {
 				y++
 			}
 		}
-		textureIndex[tileRune] = rects
+		ui.textureIndex[tileRune] = rects
 	}
 }
 
-func imgFileToTexture(filename string) *sdl.Texture {
+func (ui *ui) imgFileToTexture(filename string) *sdl.Texture {
 	fd, err := os.Open(filename)
 	if err != nil {
 		log.Panicf("opening file: %v", err)
@@ -98,7 +152,7 @@ func imgFileToTexture(filename string) *sdl.Texture {
 	}
 
 	// create texture
-	tex, err := renderer.CreateTexture(
+	tex, err := ui.renderer.CreateTexture(
 		sdl.PIXELFORMAT_ABGR8888,
 		sdl.TEXTUREACCESS_STATIC,
 		int32(w),
@@ -107,6 +161,7 @@ func imgFileToTexture(filename string) *sdl.Texture {
 	if err != nil {
 		log.Panicf("texture: %v", err)
 	}
+
 	tex.Update(nil, pixels, w*4)
 
 	err = tex.SetBlendMode(sdl.BLENDMODE_BLEND)
@@ -118,77 +173,35 @@ func imgFileToTexture(filename string) *sdl.Texture {
 }
 
 func init() {
-	sdl.LogSetAllPriority(sdl.LOG_PRIORITY_VERBOSE)
-
 	// init sdl
 	err := sdl.Init(sdl.INIT_EVERYTHING)
 	if err != nil {
 		log.Panicf("init sdl: %v", err)
 	}
-
-	// create window
-	window, err := sdl.CreateWindow(
-		"RPG",
-		200,
-		200,
-		winWidth,
-		winHeight,
-		sdl.WINDOW_SHOWN,
-	)
-	if err != nil {
-		log.Panicf("window: %v", err)
-	}
-
-	// create renderer
-	renderer, err = sdl.CreateRenderer(window,
-		-1,
-		sdl.RENDERER_ACCELERATED, // USE GPU!
-	)
-	if err != nil {
-		log.Panicf("renderer: %v", err)
-	}
-	sdl.SetHint(sdl.HINT_RENDER_SCALE_QUALITY, "1")
-
-	textureAtlas = imgFileToTexture("cmd/rpg/ui2d/assets/tiles.png")
-
-	loadTextureIndex()
-
-	keyboardState = sdl.GetKeyboardState()
-	prevKeyboardState = make([]uint8, len(keyboardState))
-	for i, v := range keyboardState {
-		prevKeyboardState[i] = v
-	}
-
-	centerX = -1
-	centerY = -1
 }
 
-type UI2d struct {
-	// TODO: stuff...
-}
-
-func (ui *UI2d) Draw(level *game.Level) {
-	if centerX == -1 && centerY == -1 {
-		centerX = level.Player.X
-		centerY = level.Player.Y
+func (ui *ui) Draw(level *game.Level) {
+	if ui.centerX == -1 && ui.centerY == -1 {
+		ui.centerX = level.Player.X
+		ui.centerY = level.Player.Y
 	}
 
 	limit := 5
-	if level.Player.X > centerX+limit {
-		centerX++
-	} else if level.Player.X < centerX-limit {
-		centerX--
-	} else if level.Player.Y > centerY+limit {
-		centerY++
-	} else if level.Player.Y < centerY+limit {
-		centerY--
+	if level.Player.X > ui.centerX+limit {
+		ui.centerX++
+	} else if level.Player.X < ui.centerX-limit {
+		ui.centerX--
+	} else if level.Player.Y > ui.centerY+limit {
+		ui.centerY++
+	} else if level.Player.Y < ui.centerY+limit {
+		ui.centerY--
 	}
 
-	offsetX := int32((winWidth / 2) - centerX*32)
-	offsetY := int32((winHeight / 2) - centerY*32)
+	offsetX := int32(ui.winWidth/2 - ui.centerX*32)
+	offsetY := int32(ui.winHeight/2 - ui.centerY*32)
 
-	renderer.Clear()
-	rand.Seed(1)
+	ui.renderer.Clear()
+	ui.r.Seed(1)
 
 	// draw tiles
 	for y, row := range level.Map {
@@ -196,71 +209,103 @@ func (ui *UI2d) Draw(level *game.Level) {
 			if tile == game.Blank {
 				continue
 			}
-			srcRects := textureIndex[tile]
-			srcRect := srcRects[rand.Intn(len(srcRects))]
+			srcRects := ui.textureIndex[tile]
+			srcRect := srcRects[ui.r.Intn(len(srcRects))]
 			dstRect := &sdl.Rect{int32(x*32) + offsetX, int32(y*32) + offsetY, 32, 32}
 
 			pos := game.Pos{x, y}
 			if _, ok := level.Debug[pos]; ok {
-				textureAtlas.SetColorMod(128, 0, 0)
+				ui.textureAtlas.SetColorMod(128, 0, 0)
 			} else {
-				textureAtlas.SetColorMod(255, 255, 255)
+				ui.textureAtlas.SetColorMod(255, 255, 255)
 			}
 
-			renderer.Copy(textureAtlas, srcRect, dstRect)
+			ui.renderer.Copy(ui.textureAtlas, srcRect, dstRect)
 		}
 	}
 
+	// draw monsters
+	for pos, monster := range level.Monsters {
+		monsterSrcRect := ui.textureIndex[game.Tile(monster.Rune)][0]
+		ui.renderer.Copy(ui.textureAtlas,
+			//&sdl.Rect{int32(21 * 32), int32(59 * 32), 32, 32},
+			monsterSrcRect,
+			&sdl.Rect{int32(pos.X)*32 + offsetX, int32(pos.Y)*32 + offsetY, 32, 32},
+		)
+	}
+
 	// draw player
-	renderer.Copy(textureAtlas,
-		&sdl.Rect{int32(21 * 32), int32(59 * 32), 32, 32},
+	playerSrcRect := ui.textureIndex['@'][0]
+	ui.renderer.Copy(ui.textureAtlas,
+		//&sdl.Rect{int32(21 * 32), int32(59 * 32), 32, 32},
+		playerSrcRect,
 		&sdl.Rect{int32(level.Player.X)*32 + offsetX, int32(level.Player.Y)*32 + offsetY, 32, 32},
 	)
 
 	// present
-	renderer.Present()
+	ui.renderer.Present()
 }
 
-func keyPress(scancode uint8) bool {
-	return keyboardState[scancode] == 0 && prevKeyboardState[scancode] != 0
+func (ui *ui) keyPress(scancode uint8) bool {
+	return ui.keyboardState[scancode] == 0 && ui.prevKeyboardState[scancode] != 0
 }
 
-func (ui *UI2d) GetInput() *game.Input {
+func (ui *ui) Run() {
 
 	for {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
-			switch event.(type) {
+			switch e := event.(type) {
 			case *sdl.QuitEvent:
-				return &game.Input{game.Quit}
+				ui.inputChan <- &game.Input{
+					Typ: game.QuitGame,
+				}
+			case *sdl.WindowEvent:
+				if e.Event == sdl.WINDOWEVENT_CLOSE {
+					ui.inputChan <- &game.Input{
+						Typ:          game.CloseWindow,
+						LevelChannel: ui.levelChan,
+					}
+				}
 			}
 		}
 
-		var input game.Input
-		if keyPress(sdl.SCANCODE_UP) {
-			input.Typ = game.Up
-		}
-		if keyPress(sdl.SCANCODE_DOWN) {
-			input.Typ = game.Down
-		}
-		if keyPress(sdl.SCANCODE_LEFT) {
-			input.Typ = game.Left
-		}
-		if keyPress(sdl.SCANCODE_RIGHT) {
-			input.Typ = game.Right
-		}
-		if keyPress(sdl.SCANCODE_S) {
-			input.Typ = game.Search
-		}
-		if keyPress(sdl.SCANCODE_Q) {
-			input.Typ = game.Quit
+		// check to see if we need to draw
+		select {
+		case newLevel, ok := <-ui.levelChan:
+			if ok {
+				ui.Draw(newLevel)
+			}
+		default:
 		}
 
-		for i, v := range keyboardState {
-			prevKeyboardState[i] = v
-		}
+		if sdl.GetKeyboardFocus() == ui.window || sdl.GetMouseFocus() == ui.window {
+			var input game.Input
+			if ui.keyPress(sdl.SCANCODE_UP) {
+				input.Typ = game.Up
+			}
+			if ui.keyPress(sdl.SCANCODE_DOWN) {
+				input.Typ = game.Down
+			}
+			if ui.keyPress(sdl.SCANCODE_LEFT) {
+				input.Typ = game.Left
+			}
+			if ui.keyPress(sdl.SCANCODE_RIGHT) {
+				input.Typ = game.Right
+			}
+			if ui.keyPress(sdl.SCANCODE_S) {
+				input.Typ = game.Search
+			}
+			if ui.keyPress(sdl.SCANCODE_Q) {
+				input.Typ = game.QuitGame
+			}
 
-		if input.Typ != game.None {
-			return &input
+			for i, v := range ui.keyboardState {
+				ui.prevKeyboardState[i] = v
+			}
+
+			if input.Typ != game.None {
+				ui.inputChan <- &input
+			}
 		}
 	}
 }
