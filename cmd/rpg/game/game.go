@@ -186,10 +186,11 @@ func checkDoor(level *Level, pos Pos) {
 
 func (game *Game) handleInput(input *Input) {
 	p := game.Level.Player
+	level := game.Level
 	switch input.Typ {
 	case Up:
-		if canWalk(game.Level, Pos{p.X, p.Y - 1}) {
-			game.Level.Player.Y--
+		if canWalk(level, Pos{p.X, p.Y - 1}) {
+			p.Y--
 		}
 	case Down:
 		if canWalk(game.Level, Pos{p.X, p.Y + 1}) {
@@ -205,7 +206,7 @@ func (game *Game) handleInput(input *Input) {
 		}
 	case Search:
 		//game.bfs(game.Level.Player.Pos)
-		game.astar(game.Level.Player.Pos, Pos{3, 2})
+		level.astar(level.Player.Pos, Pos{3, 2})
 	case CloseWindow:
 		close(input.LevelChannel)
 		chanIndex := 0
@@ -241,16 +242,16 @@ func getNeighbors(level *Level, current Pos) []Pos {
 	return neighbors
 }
 
-func (game *Game) bfs(start Pos) {
+func (level *Level) bfs(start Pos) {
 	frontier := make([]Pos, 0, 8)
 	frontier = append(frontier, start)
 	visited := make(map[Pos]bool, 0)
 	visited[start] = true
-	game.Level.Debug = visited
+	level.Debug = visited
 	for len(frontier) > 0 {
 		current := frontier[0]
 		frontier = frontier[1:]
-		for _, next := range getNeighbors(game.Level, current) {
+		for _, next := range getNeighbors(level, current) {
 			if !visited[next] {
 				frontier = append(frontier, next)
 				visited[next] = true
@@ -261,7 +262,7 @@ func (game *Game) bfs(start Pos) {
 
 }
 
-func (game *Game) astar(start Pos, goal Pos) []Pos {
+func (level *Level) astar(start Pos, goal Pos) []Pos {
 	frontier := make(pqueue, 0, 8)
 	frontier = frontier.push(start, 1)
 	cameFrom := make(map[Pos]Pos)
@@ -290,7 +291,7 @@ func (game *Game) astar(start Pos, goal Pos) []Pos {
 			return path
 		}
 
-		for _, next := range getNeighbors(game.Level, current) {
+		for _, next := range getNeighbors(level, current) {
 			newCost := costSoFar[current] + 1 // always 1 for now
 			_, exists := costSoFar[next]
 			if !exists || newCost < costSoFar[next] {

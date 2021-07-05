@@ -17,6 +17,10 @@ func NewSpider() *Monster {
 	return &Monster{'S', "Spider", 10, 10, 1.0}
 }
 
+func (m *Monster) Update(level *Level) {
+
+}
+
 /*
 func NewRat(p Pos) *Monster {
 	monster := &Monster{}
