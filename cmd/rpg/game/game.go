@@ -2,6 +2,7 @@ package game
 
 import (
 	"bufio"
+	"fmt"
 	"math"
 	"os"
 	"time"
@@ -133,10 +134,10 @@ func loadLevelFromFile(filename string) *Level {
 				level.Player.Y = y
 				t = Pending
 			case 'R':
-				level.Monsters[Pos{x, y}] = NewRat()
+				level.Monsters[Pos{x, y}] = NewRat(Pos{x, y})
 				t = Pending
 			case 'S':
-				level.Monsters[Pos{x, y}] = NewSpider()
+				level.Monsters[Pos{x, y}] = NewSpider(Pos{x, y})
 				t = Pending
 			default:
 				panic("Invalid character in map")
@@ -185,24 +186,24 @@ func checkDoor(level *Level, pos Pos) {
 }
 
 func (game *Game) handleInput(input *Input) {
-	p := game.Level.Player
 	level := game.Level
+	p := game.Level.Player
 	switch input.Typ {
 	case Up:
 		if canWalk(level, Pos{p.X, p.Y - 1}) {
-			p.Y--
+			level.Player.Y--
 		}
 	case Down:
-		if canWalk(game.Level, Pos{p.X, p.Y + 1}) {
-			game.Level.Player.Y++
+		if canWalk(level, Pos{p.X, p.Y + 1}) {
+			level.Player.Y++
 		}
 	case Left:
 		if canWalk(game.Level, Pos{p.X - 1, p.Y}) {
-			game.Level.Player.X--
+			level.Player.X--
 		}
 	case Right:
 		if canWalk(game.Level, Pos{p.X + 1, p.Y}) {
-			game.Level.Player.X++
+			level.Player.X++
 		}
 	case Search:
 		//game.bfs(game.Level.Player.Pos)
@@ -312,6 +313,8 @@ func (level *Level) astar(start Pos, goal Pos) []Pos {
 
 func (game *Game) Run() {
 
+	fmt.Printf("Starting RPG...\n")
+
 	// send gamestate updates
 	for _, lchan := range game.LevelChans {
 		lchan <- game.Level
@@ -319,10 +322,19 @@ func (game *Game) Run() {
 
 	// gameloop
 	for input := range game.InputChan {
+
+		// handle input signals
 		if input.Typ == QuitGame {
 			return
 		}
+
+		// handle inputs
 		game.handleInput(input)
+
+		// update monsters
+		for _, monster := range game.Level.Monsters {
+			monster.Update(game.Level)
+		}
 
 		// all windows are closed
 		if len(game.LevelChans) == 0 {
