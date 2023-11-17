@@ -2,17 +2,25 @@ package gogame
 
 import (
 	"fmt"
-	"github.com/veandco/go-sdl2/sdl"
+	"log"
 	"time"
+
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 var delta float64
+
+type element interface {
+	IsActive() bool
+	OnUpdate() error
+	OnDraw(r *sdl.Renderer) error
+}
 
 type Game struct {
 	win      *sdl.Window
 	ren      *sdl.Renderer
 	ticks    float64
-	elements []interface{}
+	elements []element
 }
 
 func NewGame(title string, width int32, height int32) (*Game, error) {
@@ -57,12 +65,14 @@ func (g *Game) Run() error {
 			}
 		}
 
+		var err error
+
 		for _, elem := range g.elements {
-			if elem.active {
-				err = elem.update()
+			if elem.IsActive() {
+				err = elem.OnUpdate()
 				handleErr("updating element", err)
 
-				err = elem.draw(renderer)
+				err = elem.OnDraw(g.ren)
 				handleErr("drawing element", err)
 			}
 		}
@@ -70,6 +80,10 @@ func (g *Game) Run() error {
 		g.ren.Present()
 		delta = time.Since(frameStart).Seconds() * g.ticks
 	}
+}
+
+func handleErr(msg string, err error) {
+	log.Printf("%s: %s\n", msg, err)
 }
 
 func (g *Game) Destroy() {

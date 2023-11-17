@@ -2,34 +2,51 @@ package game
 
 type Monster struct {
 	Pos
-	Rune      rune
-	Name      string
-	Hitpoints int
-	Strength  int
-	Speed     float32
-	//Character
+	Rune         rune
+	Name         string
+	Hitpoints    int
+	Strength     int
+	Speed        float32
+	ActionPoints float32
+	// Character
 }
 
 func NewRat(p Pos) *Monster {
-	return &Monster{p, 'R', "Rat", 5, 5, 2.0}
+	return &Monster{p, 'R', "Rat", 5, 5, 2.0, 0}
 }
 
 func NewSpider(p Pos) *Monster {
-	return &Monster{p, 'S', "Spider", 10, 10, 1.0}
+	return &Monster{p, 'S', "Spider", 10, 10, 1.0, 0}
 }
 
 func (m *Monster) Update(level *Level) {
+	m.ActionPoints += m.Speed
 	playerPos := level.Player.Pos
+
+	apInt := int(m.ActionPoints)
+
 	positions := level.astar(m.Pos, playerPos)
-	if len(positions) > 1 {
-		m.Move(positions[1], level)
+	moveIndex := 1
+	for i := 0; i < apInt; i++ {
+		// must be > 1 because the 1st position is the monsters current position
+		if moveIndex < len(positions) {
+			m.Move(positions[moveIndex], level)
+			moveIndex++
+			m.ActionPoints--
+		}
 	}
 }
 
 func (m *Monster) Move(to Pos, level *Level) {
-	delete(level.Monsters, m.Pos)
-	level.Monsters[to] = m
-	m.Pos = to
+	_, exists := level.Monsters[to]
+
+	// todo: check if the tile being moved is valid
+	// todo: if player is in the way, attack player
+	if !exists && to != level.Player.Pos {
+		delete(level.Monsters, m.Pos)
+		level.Monsters[to] = m
+		m.Pos = to
+	}
 }
 
 /*

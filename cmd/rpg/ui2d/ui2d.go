@@ -2,14 +2,16 @@ package ui2d
 
 import (
 	"bufio"
-	"github.com/scottcagno/gng/cmd/rpg/game"
-	"github.com/veandco/go-sdl2/sdl"
 	"image/png"
 	"log"
 	"math/rand"
 	"os"
 	"strconv"
 	"strings"
+	"unsafe"
+
+	"github.com/scottcagno/gng/cmd/rpg/game"
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 type ui struct {
@@ -162,7 +164,10 @@ func (ui *ui) imgFileToTexture(filename string) *sdl.Texture {
 		log.Panicf("texture: %v", err)
 	}
 
-	tex.Update(nil, pixels, w*4)
+	err = tex.Update(nil, unsafe.Pointer(&pixels[0]), w*4)
+	if err != nil {
+		log.Panicf("updating texture: %v", err)
+	}
 
 	err = tex.SetBlendMode(sdl.BLENDMODE_BLEND)
 	if err != nil {

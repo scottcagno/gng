@@ -5,8 +5,18 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"time"
 )
+
+// TODO:
+// change the way key presses work
+// make speed work properly
+// combat
+// cleanup? items?
+
+// type GameUI interface {
+// 	Draw(*Level)
+// 	GetInput() *Input
+// }
 
 type Game struct {
 	LevelChans []chan *Level
@@ -150,28 +160,37 @@ func loadLevelFromFile(filename string) *Level {
 	for y, row := range level.Map {
 		for x, tile := range row {
 			if tile == Pending {
-			SearchLoop:
-				for searchX := x - 1; searchX <= x+1; searchX++ {
-					for searchY := y - 1; searchY <= y+1; searchY++ {
-						searchTile := level.Map[searchY][searchX]
-						switch searchTile {
-						case DirtFloor:
-							level.Map[y][x] = DirtFloor
-							break SearchLoop
-						}
-					}
-				}
+				// SearchLoop:
+				// 	for searchX := x - 1; searchX <= x+1; searchX++ {
+				// 		for searchY := y - 1; searchY <= y+1; searchY++ {
+				// 			searchTile := level.Map[searchY][searchX]
+				// 			switch searchTile {
+				// 			case DirtFloor:
+				// 				level.Map[y][x] = DirtFloor
+				// 				break SearchLoop
+				// 			}
+				// 		}
+				// 	}
+				// }
+				level.Map[y][x] = level.bfsFloor(Pos{x, y})
 			}
 		}
 	}
 	return level
 }
 
+func inRange(level *Level, pos Pos) bool {
+	return pos.X < len(level.Map[0]) && pos.Y < len(level.Map) && pos.X >= 0 && pos.Y >= 0
+}
+
 func canWalk(level *Level, pos Pos) bool {
+	if !inRange(level, pos) {
+		return false
+	}
 	t := level.Map[pos.Y][pos.X]
 	switch t {
 	case StoneWall, ClosedDoor, Blank:
-		checkDoor(level, pos)
+		// checkDoor(level, pos)
 		return false
 	default:
 		return true
@@ -185,28 +204,48 @@ func checkDoor(level *Level, pos Pos) {
 	}
 }
 
+func (player *Player) Move(to Pos, level *Level) {
+	_, exists := level.Monsters[to]
+	if !exists {
+		player.Pos = to
+	}
+
+}
+
 func (game *Game) handleInput(input *Input) {
 	level := game.Level
 	p := game.Level.Player
 	switch input.Typ {
 	case Up:
-		if canWalk(level, Pos{p.X, p.Y - 1}) {
-			level.Player.Y--
+		newPos := Pos{p.X, p.Y - 1}
+		if canWalk(level, newPos) {
+			level.Player.Move(newPos, level)
+		} else {
+			checkDoor(level, newPos)
 		}
 	case Down:
-		if canWalk(level, Pos{p.X, p.Y + 1}) {
-			level.Player.Y++
+		newPos := Pos{p.X, p.Y + 1}
+		if canWalk(level, newPos) {
+			level.Player.Move(newPos, level)
+		} else {
+			checkDoor(level, newPos)
 		}
 	case Left:
-		if canWalk(game.Level, Pos{p.X - 1, p.Y}) {
-			level.Player.X--
+		newPos := Pos{p.X - 1, p.Y}
+		if canWalk(game.Level, newPos) {
+			level.Player.Move(newPos, level)
+		} else {
+			checkDoor(level, newPos)
 		}
 	case Right:
-		if canWalk(game.Level, Pos{p.X + 1, p.Y}) {
-			level.Player.X++
+		newPos := Pos{p.X + 1, p.Y}
+		if canWalk(game.Level, newPos) {
+			level.Player.Move(newPos, level)
+		} else {
+			checkDoor(level, newPos)
 		}
 	case Search:
-		//game.bfs(game.Level.Player.Pos)
+		// game.bfs(game.Level.Player.Pos)
 		level.astar(level.Player.Pos, Pos{3, 2})
 	case CloseWindow:
 		close(input.LevelChannel)
@@ -243,24 +282,34 @@ func getNeighbors(level *Level, current Pos) []Pos {
 	return neighbors
 }
 
-func (level *Level) bfs(start Pos) {
+func (level *Level) bfsFloor(start Pos) Tile {
 	frontier := make([]Pos, 0, 8)
 	frontier = append(frontier, start)
-	visited := make(map[Pos]bool, 0)
+	visited := make(map[Pos]bool)
 	visited[start] = true
-	level.Debug = visited
+	// level.Debug = visited
+
 	for len(frontier) > 0 {
 		current := frontier[0]
+
+		currentTile := level.Map[current.Y][current.X]
+		switch currentTile {
+		case DirtFloor:
+			return DirtFloor
+		default:
+		}
+
 		frontier = frontier[1:]
 		for _, next := range getNeighbors(level, current) {
 			if !visited[next] {
 				frontier = append(frontier, next)
 				visited[next] = true
-				time.Sleep(100 * time.Millisecond)
+				// time.Sleep(100 * time.Millisecond)
 			}
 		}
 	}
 
+	return DirtFloor
 }
 
 func (level *Level) astar(start Pos, goal Pos) []Pos {
@@ -315,12 +364,12 @@ func (game *Game) Run() {
 
 	fmt.Printf("Starting RPG...\n")
 
-	// send gamestate updates
+	// send game state updates
 	for _, lchan := range game.LevelChans {
 		lchan <- game.Level
 	}
 
-	// gameloop
+	// game loop
 	for input := range game.InputChan {
 
 		// handle input signals

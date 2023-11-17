@@ -1,10 +1,13 @@
 package main
 
 import (
+	"runtime"
+
 	"github.com/scottcagno/gng/cmd/rpg/game"
 	"github.com/scottcagno/gng/cmd/rpg/ui2d"
-	"runtime"
 )
+
+// using the tutorials at: https://www.youtube.com/watch?v=ZxG90DtNs3k&list=PLDZujg-VgQlZUy1iCqBbe5faZLMkA3g2x&index=29
 
 func main() {
 	numWindows := 1
